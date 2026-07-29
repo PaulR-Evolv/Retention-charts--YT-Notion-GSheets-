@@ -5,15 +5,49 @@
   <title>Audience Retention</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 15px; background: #ffffff; }
-    .chart-container { position: relative; width: 100%; height: 88vh; }
-    h2 { text-align: center; color: #111827; font-size: 16px; margin-bottom: 4px; }
-    p.subtitle { text-align: center; color: #6B7280; font-size: 12px; margin-top: 0; margin-bottom: 12px; }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 10px 14px;
+      width: 100%;
+      height: 100vh;
+      overflow: hidden; /* Stops ugly iframe scrollbars from appearing in Notion */
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+    }
+    .header {
+      text-align: center;
+      flex-shrink: 0;
+      margin-bottom: 8px;
+    }
+    h2 {
+      margin: 0;
+      color: #111827;
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.2;
+    }
+    p.subtitle {
+      margin: 3px 0 0 0;
+      color: #6B7280;
+      font-size: 11px;
+    }
+    .chart-container {
+      position: relative;
+      width: 100%;
+      flex-grow: 1; /* Automatically expands to fill Notion embed height */
+      min-height: 0; /* Prevents overflow clipping */
+    }
   </style>
 </head>
 <body>
-  <h2 id="chartTitle">Audience Retention</h2>
-  <p class="subtitle">💡 Click any video title in the legend to toggle its line on/off</p>
+  <div class="header">
+    <h2 id="chartTitle">Audience Retention</h2>
+    <p class="subtitle">💡 Click any video title in the legend to toggle its line on/off</p>
+  </div>
+  
   <div class="chart-container">
     <canvas id="retentionChart"></canvas>
   </div>
@@ -28,10 +62,10 @@
     const urlParams = new URLSearchParams(window.location.search);
     const tabName = urlParams.get('tab');
     const repoOwner = window.location.hostname.split('.')[0];
-    const repoName = window.location.pathname.split('/')[1] || 'retention-charts';
+    const repoName = window.location.pathname.split('/')[1] || 'Retention-charts--YT-Notion-GSheets-';
 
     if (!tabName) {
-      document.body.innerHTML = '<h3>Error: Missing "tab" parameter in URL.</h3>';
+      document.body.innerHTML = '<h3 style="text-align:center;margin-top:20px;">Error: Missing "tab" parameter in URL.</h3>';
     } else {
       const dataUrl = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/data/${tabName}.json`;
       
@@ -70,11 +104,14 @@
             options: {
               responsive: true,
               maintainAspectRatio: false,
+              layout: {
+                padding: { top: 5, bottom: 5, left: 5, right: 10 }
+              },
               interaction: { mode: 'index', intersect: false },
               plugins: {
                 legend: {
                   position: 'top',
-                  labels: { boxWidth: 12, font: { size: 11 }, usePointStyle: true }
+                  labels: { boxWidth: 10, font: { size: 10 }, usePointStyle: true, padding: 8 }
                 },
                 tooltip: {
                   callbacks: {
@@ -93,14 +130,22 @@
                 }
               },
               scales: {
-                x: { title: { display: true, text: 'Video Duration Progress (%)' } },
-                y: { min: 0, max: 100, title: { display: true, text: 'Audience Retention (%)' } }
+                x: { 
+                  title: { display: true, text: 'Video Duration Progress (%)', font: { size: 10 } },
+                  ticks: { font: { size: 9 } }
+                },
+                y: { 
+                  min: 0, 
+                  max: 100, 
+                  title: { display: true, text: 'Audience Retention (%)', font: { size: 10 } },
+                  ticks: { font: { size: 9 } }
+                }
               }
             }
           });
         })
         .catch(err => {
-          document.body.innerHTML = `<h3>Data is syncing... Please wait a few seconds and refresh. (${err.message})</h3>`;
+          document.body.innerHTML = `<h3 style="text-align:center;margin-top:20px;color:#6B7280;font-size:13px;">Data is syncing... Please wait a few seconds and refresh.</h3>`;
         });
     }
   </script>
