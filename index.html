@@ -11,7 +11,7 @@
       padding: 10px 14px;
       width: 100%;
       height: 100vh;
-      overflow: hidden; /* Stops ugly iframe scrollbars from appearing in Notion */
+      overflow: hidden;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background: #ffffff;
       display: flex;
@@ -37,8 +37,8 @@
     .chart-container {
       position: relative;
       width: 100%;
-      flex-grow: 1; /* Automatically expands to fill Notion embed height */
-      min-height: 0; /* Prevents overflow clipping */
+      flex-grow: 1;
+      min-height: 0;
     }
   </style>
 </head>
@@ -67,9 +67,10 @@
     if (!tabName) {
       document.body.innerHTML = '<h3 style="text-align:center;margin-top:20px;">Error: Missing "tab" parameter in URL.</h3>';
     } else {
-      const dataUrl = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/data/${tabName}.json`;
+      // 🚨 CACHE-BUSTING TIMESTAMP ADDED BELOW TO PREVENT CDN STALE DATA 🚨
+      const dataUrl = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/data/${tabName}.json?v=${Date.now()}`;
       
-      fetch(dataUrl)
+      fetch(dataUrl, { cache: 'no-store' })
         .then(res => {
           if (!res.ok) throw new Error("Dataset not found.");
           return res.json();
@@ -87,8 +88,8 @@
 
           const datasets = payload.videos.map((vid, idx) => ({
             label: vid.title,
-            data: vid.retention,
-            durationSecs: vid.durationSecs,
+            data: vid.retention.map(Number), // Force explicit numeric conversion
+            durationSecs: Number(vid.durationSecs) || 0,
             borderColor: colors[idx % colors.length],
             backgroundColor: colors[idx % colors.length],
             borderWidth: 2,
