@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Audience Retention</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 15px; background: #ffffff; }
+    .chart-container { position: relative; width: 100%; height: 88vh; }
+    h2 { text-align: center; color: #111827; font-size: 16px; margin-bottom: 4px; }
+    p.subtitle { text-align: center; color: #6B7280; font-size: 12px; margin-top: 0; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+  <h2 id="chartTitle">Audience Retention</h2>
+  <p class="subtitle">💡 Click any video title in the legend to toggle its line on/off</p>
+  <div class="chart-container">
+    <canvas id="retentionChart"></canvas>
+  </div>
+
+  <script>
+    function formatTime(seconds) {
+      const m = Math.floor(seconds / 60);
+      const s = Math.round(seconds % 60);
+      return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabName = urlParams.get('tab');
+    const repoOwner = window.location.hostname.split('.')[0];
+    const repoName = window.location.pathname.split('/')[1] || 'retention-charts';
+
+    if (!tabName) {
+      document.body.innerHTML = '<h3>Error: Missing "tab" parameter in URL.</h3>';
+    } else {
+      const dataUrl = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/data/${tabName}.json`;
+      
+      fetch(dataUrl)
+        .then(res => {
+          if (!res.ok) throw new Error("Dataset not found.");
+          return res.json();
+        })
+        .then(payload => {
+          document.getElementById('chartTitle').innerText = payload.title;
+
+          const labels = [];
+          for (let i = 0; i <= 100; i++) { labels.push(i + '%'); }
+
+          const colors = [
+            '#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', 
+            '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1'
+          ];
+
+          const datasets = payload.videos.map((vid, idx) => ({
+            label: vid.title,
+            data: vid.retention,
+            durationSecs: vid.durationSecs,
+            borderColor: colors[idx % colors.length],
+            backgroundColor: colors[idx % colors.length],
+            borderWidth: 2,
+            tension: 0.2,
+            pointRadius: 0,
+            pointHoverRadius: 6
+          }));
+
+          const ctx = document.getElementById('retentionChart').getContext('2d');
+          new Chart(ctx, {
+            type: 'line',
+            data: { labels: labels, datasets: datasets },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              interaction: { mode: 'index', intersect: false },
+              plugins: {
+                legend: {
+                  position: 'top',
+                  labels: { boxWidth: 12, font: { size: 11 }, usePointStyle: true }
+                },
+                tooltip: {
+                  callbacks: {
+                    title: function(context) {
+                      const pct = context[0].dataIndex;
+                      return `Video Progress: ${pct}%`;
+                    },
+                    label: function(context) {
+                      const pct = context.dataIndex;
+                      const dur = context.dataset.durationSecs || 0;
+                      const currentSecs = (pct / 100) * dur;
+                      const timeStr = dur > 0 ? ` (${formatTime(currentSecs)})` : '';
+                      return ` ${context.dataset.label}: ${context.raw}% retention${timeStr}`;
+                    }
+                  }
+                }
+              },
+              scales: {
+                x: { title: { display: true, text: 'Video Duration Progress (%)' } },
+                y: { min: 0, max: 100, title: { display: true, text: 'Audience Retention (%)' } }
+              }
+            }
+          });
+        })
+        .catch(err => {
+          document.body.innerHTML = `<h3>Data is syncing... Please wait a few seconds and refresh. (${err.message})</h3>`;
+        });
+    }
+  </script>
+</body>
+</html>
